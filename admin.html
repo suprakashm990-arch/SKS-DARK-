@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Admin Panel | Link Generator & DB</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: { 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed' },
+                        dark: { 800: '#0f172a', 900: '#020617' }
+                    },
+                    animation: {
+                        'gradient-x': 'gradient-x 10s ease infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'modal-enter': 'modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
+                            '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        modalEnter: {
+                            '0%': { opacity: '0', transform: 'scale(0.95) translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Embedded CSS for Advanced UI Effects -->
+    <style>
+        body {
+            background-color: #020617;
+            color: #ffffff;
+            overflow-x: hidden;
+            background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+        ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.6); }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        }
+
+        /* Input Styling */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+            outline: none;
+        }
+
+        /* Neon Button */
+        .neon-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .neon-btn::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg) translateY(-100%); transition: all 0.6s ease;
+        }
+        .neon-btn:hover:not(:disabled) {
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+            transform: translateY(-2px);
+        }
+        .neon-btn:hover:not(:disabled)::after { transform: rotate(45deg) translateY(100%); }
+        .neon-btn:disabled { background: #334155; box-shadow: none; cursor: not-allowed; opacity: 0.7; transform: none; }
+
+        /* Action Buttons */
+        .action-btn { transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; }
+        .action-btn:hover { transform: translateY(-2px); }
+
+        /* Ambient Background Nodes */
+        .ambient-node { position: fixed; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.3; }
+
+        /* Floating Particles */
+        #particles { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; overflow: hidden; pointer-events: none; }
+        .particle { position: absolute; bottom: -10px; background: rgba(139, 92, 246, 0.4); border-radius: 50%; animation: floatUp linear infinite; }
+        
+        @keyframes floatUp {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
+        }
+
+        /* Utility classes */
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Toast Notification */
+        #toast { transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .toast-hidden { transform: translateY(150%); opacity: 0; }
+        .toast-visible { transform: translateY(0); opacity: 1; }
+
+        /* Table Row Animations */
+        .table-row-anim { animation: fadeIn 0.3s ease-out forwards; opacity: 0; }
+
+        /* Loader */
+        .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #ffffff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; }
+        .loader-sm { width: 16px; height: 16px; border-width: 2px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex justify-center min-h-screen relative font-sans p-4 py-10">
+
+    <!-- Ambient Glowing Background Elements -->
+    <div class="ambient-node top-[-10%] left-[-10%] w-96 h-96 bg-brand-600 animate-pulse"></div>
+    <div class="ambient-node bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600 animate-pulse" style="animation-delay: 2s;"></div>
+    <div id="particles"></div>
+
+    <!-- Main Dashboard Container -->
+    <main class="w-full max-w-5xl z-10 flex flex-col gap-8 animate-float" style="animation-duration: 8s; animation-timing-function: ease-in-out;">
+        
+        <!-- SECTION 1: UPLOAD & GENERATE (Kept exact styling, restricted width to match original) -->
+        <div class="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden w-full max-w-lg mx-auto">
+            <!-- Header Section -->
+            <div class="text-center mb-8 relative z-10">
+                <div class="w-16 h-16 mx-auto bg-brand-500/20 rounded-2xl flex items-center justify-center mb-4 border border-brand-500/30 shadow-[0_0_20px_rgba(139,92,246,0.3)] transform rotate-3 hover:rotate-6 transition-transform">
+                    <svg class="w-8 h-8 text-brand-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-400 mb-2 tracking-wide">Admin Portal</h1>
+                <p class="text-sm text-gray-400 font-medium">Secure Link Generation System</p>
+            </div>
+
+            <!-- Upload / Generate Section -->
+            <div id="generate-section" class="space-y-5 relative z-10 fade-in">
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-brand-400 uppercase tracking-wider pl-1">Target MediaFire URL</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        </div>
+                        <input type="url" id="mediafire-url" placeholder="https://www.mediafire.com/file/..." class="glass-input w-full pl-11 pr-4 py-4 rounded-xl text-sm placeholder-gray-500 font-medium" required>
+                    </div>
+                </div>
+
+                <button id="btn-generate" class="neon-btn w-full py-4 rounded-xl font-bold text-white text-lg tracking-wider flex items-center justify-center gap-2 mt-4">
+                    <span id="btn-text">Generate Secure Link</span>
+                    <svg id="btn-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <div id="btn-loader" class="loader hidden"></div>
+                </button>
+            </div>
+
+            <!-- Result Section (Hidden initially) -->
+            <div id="result-section" class="hidden mt-6 pt-6 border-t border-white/10 relative z-10 fade-in">
+                <div class="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-4 text-center">
+                    <svg class="w-8 h-8 text-green-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h3 class="text-green-400 font-semibold text-sm">Link Successfully Generated!</h3>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-1">Your Public Share Link</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="generated-link" readonly class="glass-input w-full px-4 py-3 rounded-lg text-sm font-medium text-brand-400 cursor-text select-all">
+                        <button id="btn-copy" class="bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-lg transition-colors shadow-[0_0_10px_rgba(124,58,237,0.3)] flex-shrink-0" title="Copy to Clipboard">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="w-full mt-6 py-3 rounded-xl font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-sm">
+                    Create Another Link
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2: DATABASE MANAGEMENT -->
+        <div class="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden w-full fade-in" style="animation-delay: 0.2s;">
+            
+            <!-- DB Header & Stats -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
+                        <svg class="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                        Database Management
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Manage and track your generated secure links.</p>
+                </div>
+                
+                <!-- Stat Card -->
+                <div class="bg-white/5 border border-white/10 rounded-2xl px-6 py-3 flex items-center gap-4 shadow-inner min-w-[180px]">
+                    <div class="p-2 bg-brand-500/20 rounded-lg">
+                        <svg class="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Total Links</p>
+                        <p id="total-links-count" class="text-2xl font-bold text-white leading-none mt-1">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Initial Loader for DB -->
+            <div id="db-loader" class="py-12 flex flex-col items-center justify-center">
+                <div class="loader mb-3 border-brand-500 border-l-transparent w-8 h-8"></div>
+                <p class="text-sm text-gray-400">Loading database...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
+                <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
+                    <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-300">No links generated yet</h3>
+                <p class="text-sm text-gray-500 mt-1">Create your first secure link above.</p>
+            </div>
+
+            <!-- Database List (Table for Desktop / Cards for Mobile) -->
+            <div id="db-content" class="hidden w-full">
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto rounded-xl border border-white/10 bg-black/20">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-400">
+                                <th class="px-6 py-4 font-semibold">Slug</th>
+                                <th class="px-6 py-4 font-semibold">Target MediaFire URL</th>
+                                <th class="px-6 py-4 font-semibold">Created Date</th>
+                                <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="db-table-body" class="divide-y divide-white/5 text-sm">
+                            <!-- Dynamic Rows Injected Here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div id="db-mobile-list" class="md:hidden flex flex-col gap-4">
+                    <!-- Dynamic Cards Injected Here -->
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-center gap-4 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+            <span class="flex items-center gap-1"><svg class="w-3 h-3 text-brand-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg> AES-256</span>
+            <span class="flex items-center gap-1"><svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"></path></svg> Firestore DB</span>
+        </div>
+    </main>
+
+    <!-- EDIT MODAL -->
+    <div id="modal-edit" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black/60 backdrop-blur-sm px-4 transition-opacity duration-300 opacity-0">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl relative transform transition-all duration-300 scale-95 border-brand-500/30" id="modal-edit-content">
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Edit Target URL
+            </h3>
+            <p class="text-sm text-gray-400 mb-4">Editing link for slug: <span id="edit-slug-display" class="font-bold text-brand-400"></span></p>
+            
+            <input type="hidden" id="edit-doc-id">
+            <div class="space-y-4">
+                <input type="url" id="edit-mediafire-url" class="glass-input w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="https://www.mediafire.com/...">
+                
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="btn-cancel-edit" class="flex-1 py-3 rounded-xl font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm">Cancel</button>
+                    <button type="button" id="btn-save-edit" class="flex-1 py-3 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-[0_0_15px_rgba(124,58,237,0.4)] transition-all text-sm flex justify-center items-center gap-2">
+                        <span>Save Changes</span>
+                        <div id="edit-loader" class="loader loader-sm hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="modal-delete" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black/60 backdrop-blur-sm px-4 transition-opacity duration-300 opacity-0">
+        <div class="glass-panel w-full max-w-sm rounded-2xl p-6 shadow-2xl relative transform transition-all duration-300 scale-95 border-red-500/30 text-center" id="modal-delete-content">
+            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Delete Link?</h3>
+            <p class="text-sm text-gray-400 mb-6">Are you sure you want to delete this link? This action cannot be undone.</p>
+            
+            <input type="hidden" id="delete-doc-id">
+            
+            <div class="flex gap-3">
+                <button type="button" id="btn-cancel-delete" class="flex-1 py-3 rounded-xl font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm">Cancel</button>
+                <button type="button" id="btn-confirm-delete" class="flex-1 py-3 rounded-xl font-bold text-white bg-red-600 hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all text-sm flex justify-center items-center gap-2">
+                    <span>Delete</span>
+                    <div id="delete-loader" class="loader loader-sm hidden"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 glass-panel px-6 py-4 rounded-xl border-l-4 border-brand-500 shadow-[0_10px_40px_rgba(0,0,0,0.5)] toast-hidden z-[60] flex items-center gap-3">
+        <svg id="toast-icon" class="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div>
+            <p id="toast-title" class="text-sm font-bold text-white leading-tight">Notification</p>
+            <p id="toast-msg" class="text-xs text-gray-300 mt-0.5">Message details here</p>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script type="module">
+        // Import Firebase v10 Modular CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, updateDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        /* =========================================
+           1. FIREBASE CONFIGURATION
+        ========================================= */
+        const firebaseConfig = {
+  apiKey: "AIzaSyAhiuooukPT2wi6ug_3CUTnSXp9VX9sAOQ",
+  authDomain: "sks-dark.firebaseapp.com",
+  projectId: "sks-dark",
+  storageBucket: "sks-dark.firebasestorage.app",
+  messagingSenderId: "764483033982",
+  appId: "1:764483033982:web:b874cdf8a8c637fc13312f"
+};
+
+        let db;
+        let isDemoMode = false;
+        let dbDataCache = []; // Local cache to update UI instantly without re-fetching
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            if(firebaseConfig.apiKey === "YOUR_API_KEY") isDemoMode = true;
+        } catch (e) {
+            console.warn("Firebase config missing or invalid. App will run in Demo Mode.");
+            isDemoMode = true;
+        }
+
+        /* =========================================
+           2. DOM ELEMENTS & STATE
+        ========================================= */
+        const ui = {
+            // Upload UI
+            urlInput: document.getElementById('mediafire-url'),
+            btnGenerate: document.getElementById('btn-generate'),
+            btnText: document.getElementById('btn-text'),
+            btnIcon: document.getElementById('btn-icon'),
+            btnLoader: document.getElementById('btn-loader'),
+            sectionGenerate: document.getElementById('generate-section'),
+            sectionResult: document.getElementById('result-section'),
+            linkOutput: document.getElementById('generated-link'),
+            btnCopy: document.getElementById('btn-copy'),
+            btnReset: document.getElementById('btn-reset'),
+            
+            // Database UI
+            totalCount: document.getElementById('total-links-count'),
+            dbLoader: document.getElementById('db-loader'),
+            dbEmpty: document.getElementById('db-empty'),
+            dbContent: document.getElementById('db-content'),
+            tableBody: document.getElementById('db-table-body'),
+            mobileList: document.getElementById('db-mobile-list'),
+            
+            // Modals
+            modalEdit: document.getElementById('modal-edit'),
+            modalEditContent: document.getElementById('modal-edit-content'),
+            editDocId: document.getElementById('edit-doc-id'),
+            editSlugDisplay: document.getElementById('edit-slug-display'),
+            editMediafireUrl: document.getElementById('edit-mediafire-url'),
+            btnSaveEdit: document.getElementById('btn-save-edit'),
+            btnCancelEdit: document.getElementById('btn-cancel-edit'),
+            editLoader: document.getElementById('edit-loader'),
+
+            modalDelete: document.getElementById('modal-delete'),
+            modalDeleteContent: document.getElementById('modal-delete-content'),
+            deleteDocId: document.getElementById('delete-doc-id'),
+            btnConfirmDelete: document.getElementById('btn-confirm-delete'),
+            btnCancelDelete: document.getElementById('btn-cancel-delete'),
+            deleteLoader: document.getElementById('delete-loader'),
+
+            // Toast
+            toast: document.getElementById('toast'),
+            toastTitle: document.getElementById('toast-title'),
+            toastMsg: document.getElementById('toast-msg'),
+            toastIcon: document.getElementById('toast-icon')
+        };
+
+        let isProcessing = false;
+
+        /* =========================================
+           3. UTILITY FUNCTIONS
+        ========================================= */
+        const generateSlug = (length = 6) => {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+            return result;
+        };
+
+        const isValidUrl = (string) => {
+            try { new URL(string); return true; } catch (_) { return false; }
+        };
+
+        const formatDate = (timestamp) => {
+            if (!timestamp) return 'Just now';
+            // Handle both Firestore timestamp and JS Date
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        };
+
+        let toastTimeout;
+        const showToast = (title, msg, type = "info") => {
+            clearTimeout(toastTimeout);
+            const colors = {
+                success: { border: '#10b981', icon: '#34d399', svg: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>' },
+                error: { border: '#ef4444', icon: '#f87171', svg: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' },
+                info: { border: '#8b5cf6', icon: '#a78bfa', svg: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' }
+            };
+            const config = colors[type];
+            ui.toast.style.borderLeftColor = config.border;
+            ui.toastIcon.style.color = config.icon;
+            ui.toastIcon.innerHTML = config.svg;
+            ui.toastTitle.innerText = title;
+            ui.toastMsg.innerText = msg;
+            
+            ui.toast.classList.remove('toast-hidden');
+            ui.toast.classList.add('toast-visible');
+            toastTimeout = setTimeout(() => {
+                ui.toast.classList.remove('toast-visible');
+                ui.toast.classList.add('toast-hidden');
+            }, 4000);
+        };
+
+        /* =========================================
+           4. MODAL CONTROLLERS
+        ========================================= */
+        const openModal = (modal, content) => {
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        };
+
+        const closeModal = (modal, content) => {
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        /* =========================================
+           5. DATABASE RENDER LOGIC
+        ========================================= */
+        const renderDatabase = () => {
+            ui.totalCount.innerText = dbDataCache.length;
+            
+            if (dbDataCache.length === 0) {
+                ui.dbEmpty.classList.remove('hidden');
+                ui.dbContent.classList.add('hidden');
+                return;
+            }
+
+            ui.dbEmpty.classList.add('hidden');
+            ui.dbContent.classList.remove('hidden');
+
+            ui.tableBody.innerHTML = '';
+            ui.mobileList.innerHTML = '';
+
+            const baseDomain = window.location.origin;
+
+            dbDataCache.forEach((item, index) => {
+                const shareLink = `${baseDomain}/file/${item.slug}`;
+                const animationDelay = index * 0.05;
+
+                // Desktop Table Row
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-white/5 transition-colors table-row-anim group`;
+                tr.style.animationDelay = `${animationDelay}s`;
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-mono text-brand-400 font-medium">${item.slug}</td>
+                    <td class="px-6 py-4">
+                        <div class="max-w-[200px] truncate text-gray-300" title="${item.mediafire}">${item.mediafire}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-400">${formatDate(item.createdAt)}</td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                            <button class="action-btn bg-brand-500/20 text-brand-400 hover:bg-brand-500 hover:text-white p-2 rounded-lg" title="Copy Link" onclick="window.copyFromDb('${shareLink}')">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                            <button class="action-btn bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white p-2 rounded-lg" title="Edit URL" onclick="window.openEdit('${item.id}', '${item.slug}', '${item.mediafire}')">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button class="action-btn bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white p-2 rounded-lg" title="Delete" onclick="window.openDelete('${item.id}')">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                ui.tableBody.appendChild(tr);
+
+                // Mobile Card
+                const card = document.createElement('div');
+                card.className = `bg-white/5 border border-white/10 p-4 rounded-xl table-row-anim`;
+                card.style.animationDelay = `${animationDelay}s`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-xs text-gray-500 uppercase font-semibold">Slug</span>
+                            <p class="font-mono text-brand-400 font-bold">${item.slug}</p>
+                        </div>
+                        <span class="text-[10px] text-gray-500 bg-black/40 px-2 py-1 rounded-md">${formatDate(item.createdAt)}</span>
+                    </div>
+                    <div class="mb-4">
+                        <span class="text-xs text-gray-500 uppercase font-semibold">Target URL</span>
+                        <p class="text-sm text-gray-300 truncate w-full mt-1">${item.mediafire}</p>
+                    </div>
+                    <div class="flex gap-2 border-t border-white/10 pt-3">
+                        <button class="flex-1 bg-brand-500/10 text-brand-400 hover:bg-brand-500 hover:text-white py-2 rounded-lg text-xs font-semibold transition-colors flex justify-center items-center gap-1" onclick="window.copyFromDb('${shareLink}')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Copy
+                        </button>
+                        <button class="flex-1 bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white py-2 rounded-lg text-xs font-semibold transition-colors flex justify-center items-center gap-1" onclick="window.openEdit('${item.id}', '${item.slug}', '${item.mediafire}')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> Edit
+                        </button>
+                        <button class="flex-1 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white py-2 rounded-lg text-xs font-semibold transition-colors flex justify-center items-center gap-1" onclick="window.openDelete('${item.id}')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Del
+                        </button>
+                    </div>
+                `;
+                ui.mobileList.appendChild(card);
+            });
+        };
+
+        const fetchLinks = async () => {
+            ui.dbLoader.classList.remove('hidden');
+            ui.dbEmpty.classList.add('hidden');
+            ui.dbContent.classList.add('hidden');
+
+            if (isDemoMode) {
+                // Mock delay
+                await new Promise(r => setTimeout(r, 800));
+                renderDatabase();
+                ui.dbLoader.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const q = query(collection(db, "links"), orderBy("createdAt", "desc"));
+                const snapshot = await getDocs(q);
+                dbDataCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderDatabase();
+            } catch (error) {
+                console.error("Fetch DB Error:", error);
+                showToast("Database Error", "Failed to load links.", "error");
+            } finally {
+                ui.dbLoader.classList.add('hidden');
+            }
+        };
+
+        /* =========================================
+           6. CORE CRUD ACTIONS
+        ========================================= */
+
+        // ADD NEW LINK
+        const handleGenerate = async () => {
+            const mediafireUrl = ui.urlInput.value.trim();
+
+            if (!mediafireUrl) return showToast("Error", "Please enter a MediaFire URL.", "error");
+
+            isProcessing = true;
+            ui.urlInput.disabled = true;
+            ui.btnGenerate.disabled = true;
+            ui.btnText.innerText = "Processing...";
+            ui.btnIcon.classList.add('hidden');
+            ui.btnLoader.classList.remove('hidden');
+
+            const slug = generateSlug();
+            
+            try {
+                let newId = `demo_id_${Date.now()}`;
+                const newRecord = { slug, mediafire: mediafireUrl, createdAt: new Date() };
+
+                if (isDemoMode) {
+                    await new Promise(r => setTimeout(r, 1200));
+                    dbDataCache.unshift({ id: newId, ...newRecord });
+                } else {
+                    newRecord.createdAt = serverTimestamp();
+                    const docRef = await addDoc(collection(db, "links"), newRecord);
+                    newId = docRef.id;
+                    // Update cache for instant UI response
+                    dbDataCache.unshift({ id: newId, slug, mediafire: mediafireUrl, createdAt: new Date() });
+                }
+
+                const shareLink = `${window.location.origin}/index.html?file=${slug}`;
+                ui.linkOutput.value = shareLink;
+                
+                ui.sectionGenerate.classList.add('hidden');
+                ui.sectionResult.classList.remove('hidden');
+                
+                showToast("Success", "Link generated and saved securely.", "success");
+                renderDatabase(); // Instantly update table
+
+            } catch (error) {
+                console.error("Firebase Error:", error);
+                showToast("Database Error", "Failed to save link.", "error");
+            } finally {
+                isProcessing = false;
+                ui.urlInput.disabled = false;
+                ui.btnGenerate.disabled = false;
+                ui.btnText.innerText = "Generate Secure Link";
+                ui.btnIcon.classList.remove('hidden');
+                ui.btnLoader.classList.add('hidden');
+            }
+        };
+
+        // EDIT LINK
+        window.openEdit = (id, slug, currentUrl) => {
+            ui.editDocId.value = id;
+            ui.editSlugDisplay.innerText = slug;
+            ui.editMediafireUrl.value = currentUrl;
+            openModal(ui.modalEdit, ui.modalEditContent);
+        };
+
+        ui.btnSaveEdit.addEventListener('click', async () => {
+            const id = ui.editDocId.value;
+            const newUrl = ui.editMediafireUrl.value.trim();
+            if(!newUrl) return showToast("Error", "URL cannot be empty.", "error");
+
+            ui.btnSaveEdit.disabled = true;
+            ui.btnSaveEdit.querySelector('span').innerText = "Saving...";
+            ui.editLoader.classList.remove('hidden');
+
+            try {
+                if (isDemoMode) {
+                    await new Promise(r => setTimeout(r, 800));
+                    const index = dbDataCache.findIndex(item => item.id === id);
+                    if(index !== -1) dbDataCache[index].mediafire = newUrl;
+                } else {
+                    await updateDoc(doc(db, "links", id), { mediafire: newUrl });
+                    const index = dbDataCache.findIndex(item => item.id === id);
+                    if(index !== -1) dbDataCache[index].mediafire = newUrl;
+                }
+                
+                showToast("Updated", "Target URL updated successfully.", "success");
+                renderDatabase();
+                closeModal(ui.modalEdit, ui.modalEditContent);
+            } catch (error) {
+                console.error("Update Error:", error);
+                showToast("Error", "Failed to update link.", "error");
+            } finally {
+                ui.btnSaveEdit.disabled = false;
+                ui.btnSaveEdit.querySelector('span').innerText = "Save Changes";
+                ui.editLoader.classList.add('hidden');
+            }
+        });
+
+        // DELETE LINK
+        window.openDelete = (id) => {
+            ui.deleteDocId.value = id;
+            openModal(ui.modalDelete, ui.modalDeleteContent);
+        };
+
+        ui.btnConfirmDelete.addEventListener('click', async () => {
+            const id = ui.deleteDocId.value;
+            
+            ui.btnConfirmDelete.disabled = true;
+            ui.btnConfirmDelete.querySelector('span').innerText = "Deleting...";
+            ui.deleteLoader.classList.remove('hidden');
+
+            try {
+                if (isDemoMode) {
+                    await new Promise(r => setTimeout(r, 800));
+                    dbDataCache = dbDataCache.filter(item => item.id !== id);
+                } else {
+                    await deleteDoc(doc(db, "links", id));
+                    dbDataCache = dbDataCache.filter(item => item.id !== id);
+                }
+                
+                showToast("Deleted", "Link removed permanently.", "success");
+                renderDatabase();
+                closeModal(ui.modalDelete, ui.modalDeleteContent);
+            } catch (error) {
+                console.error("Delete Error:", error);
+                showToast("Error", "Failed to delete link.", "error");
+            } finally {
+                ui.btnConfirmDelete.disabled = false;
+                ui.btnConfirmDelete.querySelector('span').innerText = "Delete";
+                ui.deleteLoader.classList.add('hidden');
+            }
+        });
+
+        // Global Copy Function for DB Items
+        window.copyFromDb = (link) => {
+            navigator.clipboard.writeText(link).then(() => {
+                showToast("Copied!", "Public link copied to clipboard.", "success");
+            }).catch(() => showToast("Error", "Failed to copy link.", "error"));
+        };
+
+        /* =========================================
+           7. EVENT LISTENERS & BOOT
+        ========================================= */
+        
+        // Upload Action Listeners
+        ui.btnGenerate.addEventListener('click', handleGenerate);
+        ui.urlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleGenerate(); });
+        ui.btnReset.addEventListener('click', () => {
+            ui.urlInput.value = '';
+            ui.sectionResult.classList.add('hidden');
+            ui.sectionGenerate.classList.remove('hidden');
+            ui.urlInput.focus();
+        });
+
+        ui.btnCopy.addEventListener('click', () => {
+            ui.linkOutput.select();
+            ui.linkOutput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(ui.linkOutput.value).then(() => {
+                showToast("Copied!", "Link copied to clipboard.", "success");
+                const originalBg = ui.btnCopy.className;
+                ui.btnCopy.className = "bg-green-500 text-white p-3 rounded-lg transition-colors shadow-[0_0_15px_rgba(16,185,129,0.5)] flex-shrink-0";
+                ui.btnCopy.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                setTimeout(() => {
+                    ui.btnCopy.className = originalBg;
+                    ui.btnCopy.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+                }, 2000);
+            });
+        });
+
+        // Modal Cancel Listeners
+        ui.btnCancelEdit.addEventListener('click', () => closeModal(ui.modalEdit, ui.modalEditContent));
+        ui.btnCancelDelete.addEventListener('click', () => closeModal(ui.modalDelete, ui.modalDeleteContent));
+
+        // Background Particles Function
+        const createParticles = () => {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                const size = Math.random() * 5 + 2;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${Math.random() * 100}vw`;
+                p.style.animationDuration = `${Math.random() * 15 + 10}s`;
+                p.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(p);
+            }
+        };
+
+        // App Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            fetchLinks();
+        });
+
+    </script>
+</body>
+</html>

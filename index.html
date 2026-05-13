@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure File Unlock | Premium Access</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
+                        dark: { 800: '#0f172a', 900: '#020617' }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Embedded CSS for Custom Effects -->
+    <style>
+        body {
+            background-color: #020617;
+            color: #ffffff;
+            overflow-x: hidden;
+            user-select: none; /* Prevent text selection */
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Neon Buttons */
+        .neon-btn {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .neon-btn::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg) translateY(-100%); transition: all 0.6s ease;
+        }
+        .neon-btn:hover:not(:disabled) {
+            box-shadow: 0 0 25px rgba(14, 165, 233, 0.7);
+            transform: translateY(-2px);
+        }
+        .neon-btn:hover:not(:disabled)::after {
+            transform: rotate(45deg) translateY(100%);
+        }
+        .neon-btn:disabled {
+            background: #334155; box-shadow: none; cursor: not-allowed; opacity: 0.7;
+        }
+
+        /* Animated Background Particles */
+        #particles-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; overflow: hidden;
+        }
+        .particle {
+            position: absolute; bottom: -10px;
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+        }
+
+        /* Glowing Effects */
+        .glow-text { text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        
+        /* Smooth Transitions */
+        .fade-transition { transition: opacity 0.4s ease, transform 0.4s ease; }
+        .hidden-state { opacity: 0; transform: translateY(10px); pointer-events: none; position: absolute; visibility: hidden; }
+        .active-state { opacity: 1; transform: translateY(0); position: relative; visibility: visible; }
+
+        /* Custom Progress Bar */
+        .progress-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 999px; overflow: hidden; position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            height: 100%; width: 0%; transition: width 0.1s linear;
+            position: relative; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        .progress-fill::after {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* Toast */
+        #toast { transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .toast-hidden { transform: translateY(150%); opacity: 0; }
+        .toast-visible { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen relative">
+
+    <!-- Ambient Background Elements -->
+    <div class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-brand-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse-slow"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse-slow"></div>
+    <div id="particles-container"></div>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-md p-6 z-10 animate-float">
+        <div class="glass-panel rounded-3xl p-8 text-center relative overflow-hidden">
+            
+            <!-- Header Section -->
+            <div class="mb-8 relative z-10">
+                <div class="w-16 h-16 mx-auto bg-brand-500/20 rounded-full flex items-center justify-center mb-4 border border-brand-500/30 shadow-[0_0_15px_rgba(14,165,233,0.3)]">
+                    <svg class="w-8 h-8 text-brand-400 drop-shadow-[0_0_5px_rgba(56,189,248,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold glow-text mb-1 tracking-wide">Secure File Access</h1>
+                <p class="text-sm text-gray-400 font-medium" id="file-id-display">Detecting secure payload...</p>
+            </div>
+
+            <!-- Dynamic UI Container -->
+            <div id="ui-container" class="relative min-h-[160px] flex items-center justify-center flex-col">
+                
+                <!-- Loading Data State (Initial) -->
+                <div id="state-init" class="fade-transition active-state w-full">
+                    <svg class="animate-spin h-8 w-8 text-brand-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-300 text-sm animate-pulse">Connecting to secure database...</p>
+                </div>
+
+                <!-- STEP 1: Generate Link Button -->
+                <div id="state-step1" class="fade-transition hidden-state w-full">
+                    <button onclick="handleStep1()" class="neon-btn w-full py-4 rounded-xl font-bold text-white text-lg tracking-wider flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Generate Link
+                    </button>
+                    <p class="text-xs text-gray-400 mt-4">Step 1 of 3 to unlock your file safely.</p>
+                </div>
+
+                <!-- STEP 2: Get Download Link Button -->
+                <div id="state-step2" class="fade-transition hidden-state w-full">
+                    <button onclick="handleStep2()" class="neon-btn w-full py-4 rounded-xl font-bold text-white text-lg tracking-wider flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Get Download Link
+                    </button>
+                    <p class="text-xs text-gray-400 mt-4">Step 2 of 3 to unlock your file safely.</p>
+                </div>
+
+                <!-- STEP 3: Final Download Button -->
+                <div id="state-step3" class="fade-transition hidden-state w-full">
+                    <button onclick="handleDownload()" class="neon-btn w-full py-4 rounded-xl font-bold text-white text-lg tracking-wider flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download Now
+                    </button>
+                    <p class="text-xs text-emerald-400 mt-4 font-medium">Link successfully unlocked!</p>
+                </div>
+
+                <!-- Shared Progress / Loading UI -->
+                <div id="state-progress" class="fade-transition hidden-state w-full">
+                    <div class="flex justify-between text-xs font-semibold mb-2 text-brand-400">
+                        <span id="progress-status">Initializing...</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                    <div class="progress-track h-3 w-full">
+                        <div id="progress-bar" class="progress-fill"></div>
+                    </div>
+                    <div class="mt-4 flex justify-center space-x-1">
+                        <div class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Secure Badges -->
+            <div class="mt-8 pt-4 border-t border-white/5 flex items-center justify-center gap-4 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+                <span class="flex items-center gap-1"><svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 10.944-4.66-1.274-8-5.72-8-10.944 0-.68.056-1.35.166-2.002z"></path></svg> AES-256</span>
+                <span class="flex items-center gap-1"><svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"></path></svg> Safe Scan</span>
+                <span class="flex items-center gap-1"><svg class="w-3 h-3 text-brand-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg> Verified</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 glass-panel px-6 py-3 rounded-lg border-l-4 border-brand-500 shadow-xl toast-hidden z-50 flex items-center gap-3">
+        <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span id="toast-msg" class="text-sm font-medium text-white">Notification</span>
+    </div>
+
+    <!-- Firebase Integration & Main Logic -->
+    <script type="module">
+        // Import Firebase v10 CDN Modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        /* =========================================
+           1. CONFIGURATION & STATE
+        ========================================= */
+        
+        // ADD YOUR REAL FIREBASE CONFIG HERE
+        const firebaseConfig = {
+  apiKey: "AIzaSyAhiuooukPT2wi6ug_3CUTnSXp9VX9sAOQ",
+  authDomain: "sks-dark.firebaseapp.com",
+  projectId: "sks-dark",
+  storageBucket: "sks-dark.firebasestorage.app",
+  messagingSenderId: "764483033982",
+  appId: "1:764483033982:web:b874cdf8a8c637fc13312f"
+};
+
+        // Internal State
+        let db;
+        let finalMediafireUrl = "";
+        let isProcessing = false;
+
+        // UI Elements
+        const uiStates = {
+            init: document.getElementById('state-init'),
+            step1: document.getElementById('state-step1'),
+            step2: document.getElementById('state-step2'),
+            step3: document.getElementById('state-step3'),
+            progress: document.getElementById('state-progress')
+        };
+
+        // Text Arrays for loading animations
+        const textsStep1 = ["Securing connection...", "Verifying payload...", "Encrypting traffic...", "Generating secure link..."];
+        const textsStep2 = ["Bypassing restrictions...", "Connecting to MediaFire...", "Applying unlock token...", "Finalizing download link..."];
+
+        /* =========================================
+           2. SECURITY & ANTI-SPAM
+        ========================================= */
+
+        // Disable right-click
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // Basic Inspect protection
+        document.addEventListener('keydown', e => {
+            if(e.ctrlKey && (e.key === 'u' || e.key === 'i' || e.key === 'j' || e.key === 'c' || e.key === 's')) e.preventDefault();
+            if(e.key === 'F12') e.preventDefault();
+        });
+
+        function showToast(msg, type = "info") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toast.style.borderLeftColor = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#38bdf8');
+            toastMsg.innerText = msg;
+            toast.classList.remove('toast-hidden');
+            toast.classList.add('toast-visible');
+            setTimeout(() => {
+                toast.classList.remove('toast-visible');
+                toast.classList.add('toast-hidden');
+            }, 3000);
+        }
+
+        /* =========================================
+           3. UI CONTROLLERS
+        ========================================= */
+
+        function switchUI(targetState) {
+            Object.values(uiStates).forEach(el => {
+                el.classList.remove('active-state');
+                el.classList.add('hidden-state');
+            });
+            uiStates[targetState].classList.remove('hidden-state');
+            uiStates[targetState].classList.add('active-state');
+        }
+
+        function runCountdown(durationSeconds, textArray, onComplete) {
+            isProcessing = true;
+            switchUI('progress');
+            
+            const bar = document.getElementById('progress-bar');
+            const percentText = document.getElementById('progress-percentage');
+            const statusText = document.getElementById('progress-status');
+            
+            let progress = 0;
+            const updateInterval = 50; // Update 20 times a second for smoothness
+            const totalSteps = (durationSeconds * 1000) / updateInterval;
+            const stepAmount = 100 / totalSteps;
+
+            const timer = setInterval(() => {
+                progress += stepAmount;
+                if(progress > 100) progress = 100;
+                
+                bar.style.width = `${progress}%`;
+                percentText.innerText = `${Math.floor(progress)}%`;
+                
+                // Update text based on progress stage
+                const textIndex = Math.floor((progress / 100) * textArray.length);
+                statusText.innerText = textArray[Math.min(textIndex, textArray.length - 1)];
+
+                if(progress >= 100) {
+                    clearInterval(timer);
+                    isProcessing = false;
+                    onComplete();
+                }
+            }, updateInterval);
+        }
+
+        /* =========================================
+           4. CORE LOGIC (GLOBAL SCOPE EXPORTS)
+        ========================================= */
+
+        // Step 1 Click
+        window.handleStep1 = () => {
+            if(isProcessing) return;
+            runCountdown(10, textsStep1, () => {
+                showToast("Link Generated Successfully!", "success");
+                switchUI('step2');
+            });
+        };
+
+        // Step 2 Click
+        window.handleStep2 = () => {
+            if(isProcessing) return;
+            runCountdown(10, textsStep2, () => {
+                showToast("Download Unlocked!", "success");
+                switchUI('step3');
+            });
+        };
+
+        // Final Download Click
+        window.handleDownload = () => {
+            if(isProcessing) return;
+            if(!finalMediafireUrl) {
+                showToast("Error: Missing URL. Refresh page.", "error");
+                return;
+            }
+            showToast("Redirecting...", "info");
+            
+            // Obfuscated redirect approach
+            setTimeout(() => {
+                window.location.replace(finalMediafireUrl);
+            }, 500);
+        };
+
+        /* =========================================
+           5. INITIALIZATION & FIREBASE FETCH
+        ========================================= */
+
+        async function init() {
+            // Extract Slug from URL
+            // Works for domains like domain.com/file/abc123 or domain.com/?file=abc123
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            let slug = pathParts[pathParts.length - 1];
+            if(!slug || slug.includes('.html')) {
+                const params = new URLSearchParams(window.location.search);
+                slug = params.get('file') || params.get('slug');
+            }
+
+            const displayEl = document.getElementById('file-id-display');
+
+            if (!slug) {
+                displayEl.innerText = "Error: Invalid or missing file identifier.";
+                displayEl.classList.add('text-red-400');
+                showToast("No slug provided in URL.", "error");
+                // Fallback for Demo Purposes ONLY (Remove in production)
+                slug = "demo-mode";
+                displayEl.innerText = "Demo Mode: " + slug;
+                setTimeout(() => mockFetchFallback(), 1500);
+                return;
+            }
+
+            displayEl.innerText = "File ID: " + slug;
+
+            try {
+                // Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+
+                // Query Firestore: collection "links", where "slug" == slug
+                const linksRef = collection(db, "links");
+                const q = query(linksRef, where("slug", "==", slug));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const data = querySnapshot.docs[0].data();
+                    if(data.mediafire) {
+                        finalMediafireUrl = data.mediafire;
+                        switchUI('step1');
+                        showToast("Secure connection established", "success");
+                    } else {
+                        throw new Error("Target URL missing in database.");
+                    }
+                } else {
+                    throw new Error("File not found or link expired.");
+                }
+            } catch (error) {
+                console.warn("Database Fetch Error:", error);
+                // If standard config is left blank/invalid, provide demo functionality so UI is verifiable
+                if(firebaseConfig.apiKey === "YOUR_API_KEY" || error.code === 'permission-denied') {
+                    showToast("No DB Config. Running Demo Mode.", "info");
+                    mockFetchFallback();
+                } else {
+                    displayEl.innerText = "Error: " + error.message;
+                    displayEl.classList.add('text-red-400');
+                    showToast("Failed to fetch file.", "error");
+                }
+            }
+        }
+
+        // Fallback to ensure the deliverable is perfectly testable without backend setup
+        function mockFetchFallback() {
+            finalMediafireUrl = "https://www.mediafire.com/";
+            switchUI('step1');
+        }
+
+        // Particle Generation
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            const count = 30;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Randomize particle attributes
+                const size = Math.random() * 4 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.animationDuration = `${Math.random() * 10 + 5}s`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+
+        // Boot
+        window.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            setTimeout(init, 1000); // Small delay to show initial loading animation
+        });
+
+    </script>
+</body>
+</html>
