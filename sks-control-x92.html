@@ -616,7 +616,7 @@
                     dbDataCache.unshift({ id: newId, slug, mediafire: mediafireUrl, createdAt: new Date() });
                 }
 
-                const shareLink = `${window.location.origin}${window.location.pathname.replace('sks-control-x92.html','')}index.html?file=${slug}`;
+                const shareLink = `${window.location.origin}/SKS-DARK/index.html?file=${slug}`;
                 
                 ui.sectionGenerate.classList.add('hidden');
                 ui.sectionResult.classList.remove('hidden');
